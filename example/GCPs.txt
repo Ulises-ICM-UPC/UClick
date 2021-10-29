@@ -1,0 +1,10 @@
+  05      512993.800     4634580.006           1.660    off   code, x, y, z and switch 
+  06      513001.075     4634578.551           1.868    on   code, x, y, z and switch 
+  07      512982.831     4634554.242           1.758    on  code, x, y, z and switch 
+  10      513072.426     4634543.734           1.759    on   code, x, y, z and switch 
+  12      513075.959     4634538.097           1.679    off   code, x, y, z and switch 
+  17      513137.195     4634472.960           1.955    on   code, x, y, z and switch 
+  18      513137.337     4634471.162           1.902    off  code, x, y, z and switch 
+  19      513137.696     4634466.993           1.620    off  code, x, y, z and switch 
+  20      513137.851     4634464.933           1.595    on   code, x, y, z and switch 
+  22      512839.376     4634523.482           4.491    on   code, x, y, z and switch 
