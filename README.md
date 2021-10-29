@@ -1,6 +1,6 @@
 # UClick
 
-`UClick` is an open source software written in Python to register Control Coints on images for further use in [UCalib](https://github.com/Ulises-ICM-UPC/UCalib) and [UDrone](https://github.com/Ulises-ICM-UPC/UDrone).
+`UClick` is an open source software written in Python to register Control Points on images for further use in [UCalib](https://github.com/Ulises-ICM-UPC/UCalib) and [UDrone](https://github.com/Ulises-ICM-UPC/UDrone).
 
 ### Description
 
