@@ -16,7 +16,7 @@ def ClickHorizon(pathBasis, overwrite, verbosePlot):
             print('... clicking horizon at {:}'.format(filename))
             if input('Continue (n/[y])? ') in ['n', 'N']:
                 print('stop clicking horizon') 
-                exit()
+                sys.exit()
             #
             img = cv2.imread(root + os.sep + filename)
             #
@@ -40,7 +40,7 @@ def ClickGCPs(pathMain, pathBasis, overwrite, verbosePlot):
             print('... clicking GCPs at {:}'.format(filename))
             if input('Continue (n/[y])? ') in ['n', 'N']:
                 print('stop clicking GCPs') 
-                exit()
+                sys.exit()
             #
             img = cv2.imread(root + os.sep + filename)
             #
