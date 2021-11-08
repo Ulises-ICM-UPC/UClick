@@ -134,7 +134,7 @@ Contributions to this project are welcome. To do a clean pull request, please fo
 
 ## License
 
-UClick is released under a [AGPL-3.0 license](https://github.com/Ulises-ICM-UPC/UDrone/blob/master/LICENSE). If you use UClick in an academic work, please cite:
+UClick is released under a [AGPL-3.0 license](https://github.com/Ulises-ICM-UPC/UClick/blob/master/LICENSE). If you use UClick in an academic work, please cite:
 
     @Online{ulisesclick, 
       author = {Simarro, Gonzalo and Calvete, Daniel},
