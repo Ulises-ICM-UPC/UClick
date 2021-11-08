@@ -4,7 +4,7 @@
 
 ### Description
 
-The program is aimed to assist the registration of pixel coordinates corresponding to Control Points for subsequent image calibration. Two types of control points are distinguished. The points located on the horizon (Horizon Points, HP) and points located in known coordinates (Ground Control Points, GCP), for which a file with their coordinates will be supplied. The output files can then be used afterwards for manual calibration of images in [UCalib](https://github.com/Ulises-ICM-UPC/UCalib) and [UDrone](https://github.com/Ulises-ICM-UPC/UDrone).
+The program is aimed to assist the registration of pixel coordinates corresponding to Control Points for subsequent image calibration. Two types of control points are distinguished: points located on the horizon (Horizon Points, HP) and points located in known coordinates (Ground Control Points, GCP), for which a file with their coordinates will be supplied. The output files can then be used afterwards for manual calibration of images in [UCalib](https://github.com/Ulises-ICM-UPC/UCalib) and [UDrone](https://github.com/Ulises-ICM-UPC/UDrone).
 
 ### Requirements and project structure
 To run the software it is necessary to have Python (3.8) and install the following dependencies:
@@ -35,7 +35,7 @@ The structure of the project is the following:
 
 The local modules of `UClick` are located in the **`uclick`** folder.
 
-To run a demo with the video in folder **`example`** and a basis of frames in **`basis`** using a Jupyter Notebook we provide the file `example_notebook.ipynb`. For experienced users, the `example.py` file can be run in a terminal. `UClick` handles `PNG` and `JPEG` image formats.
+To run a demo with the video in folder **`example`** and a set of frames in **`basis`** using a Jupyter Notebook we provide the file `example_notebook.ipynb`. For experienced users, the `example.py` file can be run in a terminal. `UClick` handles `PNG` and `JPEG` image formats.
 
 ## Registration of Control Points
 
@@ -48,10 +48,10 @@ import sys
 sys.path.insert(0, 'uclick')
 import uclick as uclick
 import matplotlib
-matplotlib.use('TkAgg')
+matplotlib.use('Qt4Agg')
 ```
 
-Set the main path and the path of the folder where the images are be placed:
+Set the main path and the path of the folder where the images are placed:
 
 
 ```python
@@ -86,13 +86,13 @@ As a result, for each images a file `<image>cdh.txt` containing the pixel coordi
 
 ### Ground Control Points
 
-The abailable GCPs are listed in the file `GCPs.txt`. The location of these points is shown in the reference image `GCPs.jpg`.The structure of this file the following:
+The available GCPs are listed in the file `GCPs.txt`. The location of these points is shown in the reference image `GCPs.jpg`.The structure of this file the following:
 * `GCPs.txt`: For each GCP one line with
->`code`, `pixel-row`, `x-coordinate`, `y-coordinate`, `z-coordinate`, `switch`
+>`code`, `x-coordinate`, `y-coordinate`, `z-coordinate`, `switch`
 
 Quantities must be separated by at least one blank space between them and the last record should not be continued with a newline (return).
 
-For each of the images `<image>.jpg` in the folder **`basis`**, the GCPs with `switch = on` will be offered to be registered. In the case that an `<image>.jpg` has already been registered, set `overwrite = True` to register it again and `False` if you want to keep the  points that has already been registered. To verificate the GCPs have been registered, set parameter `verbosePlot = True` to generate an image `<image>cdg_check.jpg` on a **`TMP`**, and to `False` otherwise. 
+For each of the images `<image>.jpg` in the folder **`basis`**, the GCPs with `switch = on` will be offered to be registered. In the case that an `<image>.jpg` has already been registered, set `overwrite = True` to register it again and `False` if you want to keep the  points that have already been registered. To verificate the GCPs have been registered, set parameter `verbosePlot = True` to generate an image `<image>cdg_check.jpg` on a **`TMP`**, and to `False` otherwise. 
 
 
 
@@ -102,7 +102,7 @@ verbosePlot = True
 ```
 
 #### Recording of pixel coordinates
-The recording of a pixel in an image follows the procedure explained above. Now, the mmiddle button or the `Return` or `Esc` keys are used to exclude a point. If you do so, its pixel-coordinates will be recorded with values `-999`.
+The recording of a pixel in an image follows the procedure explained above. Now, the middle button or the `Return` or `Esc` keys are used to skip a point. If you do so, its pixel-coordinates will be recorded with values `-999`.
 
 Run the code to click GCP:
 
