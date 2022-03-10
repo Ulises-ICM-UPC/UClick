@@ -124,10 +124,11 @@ As the points that were excluded during the registration process are saved with 
 
 ## GCP check
 
-To verify the quality of the GCPs used in the manual calibration of the images, a RANSAC (RANdom SAmple Consensus) is performed. Points of the files `<image>cdg.txt` located at the **`basis`** folder will be tested. The calibration of the points (minimum 6) is done assuming a _parabolic_ camera model and requires a minimum error `eCritical`. Set the folder and run the RANSAC algorithm:
+To verify the quality of the GCPs used in the manual calibration of the images, a RANSAC (RANdom SAmple Consensus) is performed. Points of the files `<image>cdg.txt` located at the **`basis`** folder will be tested. The calibration of the points (minimum 6) is done assuming a _parabolic_ camera model and requires maximum reprojection pixel error `eCritical` of the GCPs. Set `eCritical` and run the RANSAC algorithm:
 
 
 ```python
+eCritical = 5.
 uclick.CheckGCPs(pathFolderBasis, eCritical)
 ```
 
