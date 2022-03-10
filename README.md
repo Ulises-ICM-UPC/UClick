@@ -1,10 +1,11 @@
+
 # UClick
 
 `UClick` is an open source software written in Python to register Control Points on images for further use in [UCalib](https://github.com/Ulises-ICM-UPC/UCalib) and [UDrone](https://github.com/Ulises-ICM-UPC/UDrone).
 
 ### Description
 
-The program is aimed to assist the registration of pixel coordinates corresponding to Control Points for subsequent image calibration. Two types of control points are distinguished: points located on the horizon (Horizon Points, HP) and points located in known coordinates (Ground Control Points, GCP), for which a file with their coordinates will be supplied. The output files can then be used afterwards for manual calibration of images in [UCalib](https://github.com/Ulises-ICM-UPC/UCalib) and [UDrone](https://github.com/Ulises-ICM-UPC/UDrone).
+The program is aimed to assist the registration of pixel coordinates corresponding to Control Points for subsequent image calibration. Two types of control points are distinguished: points located on the horizon (Horizon Points, HP) and points located in known coordinates (Ground Control Points, GCP), for which a file with their coordinates will be supplied. The output files can then be used afterwards for manual calibration of images in [UCalib](https://github.com/Ulises-ICM-UPC/UCalib) and [UDrone](https://github.com/Ulises-ICM-UPC/UDrone). A code to verify the quality of the GCPs used in the manual calibration of the images is also provided
 
 ### Requirements and project structure
 To run the software it is necessary to have Python (3.8) and install the following dependencies:
@@ -46,9 +47,9 @@ Import modules:
 import os
 import sys
 sys.path.insert(0, 'uclick')
-import uclick as uclick
 import matplotlib
-matplotlib.use('Qt4Agg')
+matplotlib.use('TkAgg')
+import uclick as uclick
 ```
 
 Set the main path and the path of the folder where the images are placed:
@@ -119,8 +120,18 @@ Real-world coordinates are given in the same coordinate system as the GCPs.
 
 New GCPs can be added to `<image>cdg.txt` by changing the value of `switch = off` to `on` in the file `GCPs.txt` and then re-running the code to click GCP. In case that `switch = on` changes to `off` the corresponding GCP will be deleted in `<image>cdg.txt`.
 
-As the points that were excluded during the registration process are saved with coordinates `-999`, if you want to register them again in mode `overwrite = False`, you will have to delete them manually from the file. 
+As the points that were excluded during the registration process are saved with coordinates `-999`, if you want to register them again in mode `overwrite = False`, you will have to delete them manually from the file.
 
+## GCP check
+
+To verify the quality of the GCPs used in the manual calibration of the images, a RANSAC (RANdom SAmple Consensus) is performed. Points of the files `<image>cdg.txt` located at the **`basis`** folder will be tested. The calibration of the points (minimum 6) is done assuming a _parabolic_ camera model and requires a minimum error `eCritical`. Set the folder and run the RANSAC algorithm:
+
+
+```python
+uclick.CheckGCPs(pathFolderBasis, eCritical)
+```
+
+For each file `<image>cdg.txt`, the GCPs that should be revised or excluded will be reported.
 
 ## Contact us
 
@@ -142,4 +153,3 @@ UClick is released under a [AGPL-3.0 license](https://github.com/Ulises-ICM-UPC/
       year = 2021,
       url = {https://github.com/Ulises-ICM-UPC/UClick}
       }
-

@@ -1,12 +1,24 @@
 #
-# Fri Oct 29 09:24:57 2021, extract from Ulises by Gonzalo Simarro
+# Thu Mar 10 15:17:59 2022, extract from Ulises by Gonzalo Simarro
 #
 import os
 import copy
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-
+import random
+#
+def AB2Pa11(A, b): # *** 
+    '''
+    .- input A is a (2*nx11)-float-ndarray
+    .- input b is a 2*n-float-ndarray
+    .- output Pa11 is a 11-float-ndarray
+    '''
+    try:
+        Pa11 = np.linalg.solve(np.dot(np.transpose(A), A), np.dot(np.transpose(A), b))
+    except:
+        Pa11 = None
+    return Pa11
 def AreImgMarginsOK(nc, nr, imgMargins): # 202109101200 # *** 
     ''' comments:
     .- input nc and nr are integers
@@ -18,6 +30,25 @@ def AreImgMarginsOK(nc, nr, imgMargins): # 202109101200 # ***
     condR = min([imgMargins['r0'], imgMargins['r1'], nr-1-(imgMargins['r0']+imgMargins['r1'])]) >= 0
     areImgMarginsOK = condC and condR
     return areImgMarginsOK
+def CDRD2CURUForParabolicSquaredDistortion(cDs, rDs, oca, ora, k1asa2): # *** 
+    ''' comments:
+    .- input cDs and rDs are float-ndarrays
+    .- input oca and ora are floats
+    .- input k1asa2 is a float (k1a * sa ** 2)
+    .- output cUs and rUs are float-ndarrays
+    '''
+    if np.abs(k1asa2) < 1.e-14:
+        cUs = 1. * cDs
+        rUs = 1. * rDs
+    else:
+        dDs2 = (cDs - oca) ** 2 + (rDs - ora) ** 2
+        xias = k1asa2 * dDs2
+        xas = Xi2XForParabolicDistortion(xias)
+        cUs = (cDs - oca) / (1. + xas) + oca
+        rUs = (rDs - ora) / (1. + xas) + ora
+    cDsR, rDsR = CURU2CDRDForParabolicSquaredDistortion(cUs, rUs, oca, ora, k1asa2)
+    assert np.allclose(cDs, cDsR) and np.allclose(rDs, rDsR)
+    return cUs, rUs
 def CR2CRInteger(cs, rs): # 202109131000 # *** 
     ''' comments:
     .- input cs and rs are integer- or float-ndarrays
@@ -56,6 +87,42 @@ def CR2PositionsWithinImage(nc, nr, cs, rs, options={}): # 202109131400 # ***
     rMin, rMax = imgMargins['r0'], nr-1-imgMargins['r1'] # recall that img[nr-1, :, :] is OK, but not img[nr, :, :]
     possWithin = np.where((cs >= cMin) & (cs <= cMax) & (rs >= rMin) & (rs <= rMax))[0]
     return possWithin
+def CURU2B(cUs, rUs): # *** 
+    poss0, poss1 = Poss0AndPoss1(len(cUs))    
+    b = np.zeros(2 * len(cUs))
+    b[poss0] = cUs
+    b[poss1] = rUs
+    return b
+def CURU2CDRDForParabolicSquaredDistortion(cUs, rUs, oca, ora, k1asa2): # *** 
+    ''' comments:
+    .- input cUs and rUs are float-ndarrays
+    .- input oca and ora are floats
+    .- input k1asa2 is a float (k1a * sa ** 2)
+    .- output cUs and rUs are float-ndarrays
+    '''
+    dUs2 = (cUs - oca) ** 2 + (rUs - ora) ** 2
+    cDs = (cUs - oca) * (1. + k1asa2 * dUs2) + oca
+    rDs = (rUs - ora) * (1. + k1asa2 * dUs2) + ora
+    return cDs, rDs
+def CURUXYZ2A(cUs, rUs, xs, ys, zs): # 202201250813
+    '''
+    .- input cUs, rUs, xs, ys and zs are float-ndarrays of the same length
+    .- output A is a (2*len(cUs)x11)-float-ndarray
+    '''
+    A0 = XYZ2A0(xs, ys, zs)
+    A1 = CURUXYZ2A1(cUs, rUs, xs, ys, zs)
+    A = np.concatenate((A0, A1), axis=1)
+    return A
+def CURUXYZ2A1(cUs, rUs, xs, ys, zs): # 202201250812
+    '''
+    .- input cUs, rUs, xs, ys and zs are float-ndarrays of the same length
+    .- output A1 is a (2*len(cUs)x3)-float-ndarray
+    '''
+    poss0, poss1 = Poss0AndPoss1(len(cUs))
+    A1 = np.zeros((2 * len(xs), 3))
+    A1[poss0, 0], A1[poss0, 1], A1[poss0, 2] = -cUs*xs, -cUs*ys, -cUs*zs
+    A1[poss1, 0], A1[poss1, 1], A1[poss1, 2] = -rUs*xs, -rUs*ys, -rUs*zs
+    return A1
 def ClickAPixelInImage(img, options={}): # 202110061655
     ''' comments:
     .- input img is a cv2-image or a string
@@ -268,6 +335,23 @@ def DisplayCRInImage(img, cs, rs, options={}): # 202109141700 # ***
         for pos in range(len(csIW)):
             cv2.circle(imgOut, (csIW[pos], rsIW[pos]), int(options['size']), colors[pos], -1)
     return imgOut
+def GCPs2K1asa2(cDs, rDs, xs, ys, zs, oca, ora, k1asa2Min, k1asa2Max, options={}): # *** 
+    ''' comments:
+    .- input cDs, rDs, xs, ys and zs are is a float-ndarrays of the same length
+    .- input oca, ora, k1asa2Min, k1asa2Max are floats
+    .- output k1asa2 is a float
+    '''
+    keys, defaultValues = ['nOfK1asa2'], [1000]
+    options = CompleteADictionary(options, keys, defaultValues)
+    A0, k1asa2s, errors = XYZ2A0(xs, ys, zs), np.linspace(k1asa2Min, k1asa2Max, options['nOfK1asa2']), []
+    for k1asa2 in k1asa2s:
+        cUs, rUs = CDRD2CURUForParabolicSquaredDistortion(cDs, rDs, oca, ora, k1asa2)
+        A, b = np.concatenate((A0, CURUXYZ2A1(cUs, rUs, xs, ys, zs)), axis=1), CURU2B(cUs, rUs)
+        Pa11 = AB2Pa11(A, b)
+        cUsR, rUsR = XYZPa112CURU(xs, ys, zs, Pa11)
+        errors.append(np.sqrt(np.mean((cUsR - cUs) ** 2 + (rUsR - rUs) ** 2)))
+    k1asa2 = k1asa2s[np.argmin(np.asarray(errors))]
+    return k1asa2
 def MakeFolder(pathFolder): # 202109131100 # *** 
     ''' comments:
     .- input pathFolder is a string
@@ -276,6 +360,19 @@ def MakeFolder(pathFolder): # 202109131100 # ***
     if not os.path.exists(pathFolder):
         os.makedirs(pathFolder)
     return None
+def NForRANSAC(eRANSAC, pRANSAC, sRANSAC): # *** 
+    ''' comments:
+    .- input eRANSAC is a float (probability of a point being "bad")
+    .- input pRANSAC is a float (goal probability of sRANSAC points being "good")
+    .- input sRANSAC is an integer (number of points of the model)
+    .- note that: (1 - e) ** s is the probability of a set of s points being good
+    .- note that: 1 - (1 - e) ** s is the probability of a set of s points being bad (at least one is bad)
+    .- note that: (1 - (1 - e) ** s) ** N is the probability of choosing N sets all being bad
+    .- note that: 1 - (1 - (1 - e) ** s) ** N is the probability of choosing N sets where at least one set if good
+    .- note that: from 1 - (1 - (1 - e) ** s) ** N = p -> 1 - p = (1 - (1 - e) ** s) ** N and we get the expression
+    '''
+    N = int(np.log(1. - pRANSAC) / np.log(1. - (1. - eRANSAC) ** sRANSAC)) + 1
+    return N
 def PathImgOrImg2Img(img): # 202110041642
     ''' comments:
     .- input img is a cv2-image or a string
@@ -306,7 +403,50 @@ def PlotCRWithTextsInImage(img, cs, rs, pathOut, options={}): # 202110051044
     MakeFolder(pathOut[0:pathOut.rfind(os.sep)])
     cv2.imwrite(pathOut, img)
     return None
-def ReadCdeTxt(pathFile, options={}): # 202109271353
+def Poss0AndPoss1(n): # 202201250804
+    '''
+    .- input n is an integer
+    .- output poss0 and poss1 are n-integer-list
+    '''
+    poss0 = [2*pos+0 for pos in range(n)]
+    poss1 = [2*pos+1 for pos in range(n)]
+    return poss0, poss1
+def RANSACForGCPs(cDs, rDs, xs, ys, zs, oca, ora, eRANSAC, pRANSAC, ecRANSAC, NForRANSACMax, options={}): # *** 
+    if len(cDs) < 6:
+        return None, None
+    keys, defaultValues = ['nOfK1asa2'], [1000]
+    options = CompleteADictionary(options, keys, defaultValues)
+    dD2Max = np.max((cDs - oca) ** 2 + (rDs - ora) ** 2)
+    k1asa2 = 0.
+    possGood = RANSACForGCPsAndK1asa2(cDs, rDs, xs, ys, zs, oca, ora, k1asa2, eRANSAC, pRANSAC, 3. * ecRANSAC, NForRANSACMax) # WATCH OUT
+    cDsSel, rDsSel, xsSel, ysSel, zsSel = [item[possGood] for item in [cDs, rDs, xs, ys, zs]]
+    k1asa2Min, k1asa2Max = -4./(27.*dD2Max)+1.e-11, 4./(27.*dD2Max) # WATCH OUT
+    k1asa2 = GCPs2K1asa2(cDsSel, rDsSel, xsSel, ysSel, zsSel, oca, ora, k1asa2Min, k1asa2Max, options={'nOfK1asa2':options['nOfK1asa2']})
+    possGood = RANSACForGCPsAndK1asa2(cDs, rDs, xs, ys, zs, oca, ora, k1asa2, eRANSAC, pRANSAC, ecRANSAC, NForRANSACMax)
+    cDsSel, rDsSel, xsSel, ysSel, zsSel = [item[possGood] for item in [cDs, rDs, xs, ys, zs]] # departing from the original points
+    k1asa2Min, k1asa2Max = -4./(27.*dD2Max)+1.e-11, 4./(27.*dD2Max) # WATCH OUT
+    k1asa2 = GCPs2K1asa2(cDsSel, rDsSel, xsSel, ysSel, zsSel, oca, ora, k1asa2Min, k1asa2Max, options={'nOfK1asa2':options['nOfK1asa2']})
+    return possGood, k1asa2
+def RANSACForGCPsAndK1asa2(cDs, rDs, xs, ys, zs, oca, ora, k1asa2, eRANSAC, pRANSAC, ecRANSAC, NForRANSACMax): # *** 
+    cUs, rUs = CDRD2CURUForParabolicSquaredDistortion(cDs, rDs, oca, ora, k1asa2)
+    AAll, bAll = CURUXYZ2A(cUs, rUs, xs, ys, zs), CURU2B(cUs, rUs)
+    sRANSAC = 6 #  (to obtain 12 equations >= 11 unkowns)
+    N, possGood = min(NForRANSACMax, NForRANSAC(eRANSAC, pRANSAC, sRANSAC)), []
+    for iN in range(N):
+        possH = random.sample(range(0, len(cUs)), sRANSAC)
+        poss01 = [2*item for item in possH] + [2*item+1 for item in possH] # who cares about the order (both A and b suffer the same)
+        A, b = AAll[poss01, :], bAll[poss01]
+        try:
+            Pa11 = AB2Pa11(A, b)
+            cUsR, rUsR = XYZPa112CURU(xs, ys, zs, Pa11) # all positions
+            errors = np.sqrt((cUsR - cUs) ** 2 + (rUsR - rUs) ** 2)
+        except:
+            continue
+        possGoodH = np.where(errors <= ecRANSAC)[0]
+        if len(possGoodH) > len(possGood):
+            possGood = copy.deepcopy(possGoodH)
+    return possGood
+def ReadCdeTxt(pathFile): # read GCPs 202201301052
     ''' comments:
     .- input pathFile is a string
     .- output codes is a string-list
@@ -314,8 +454,6 @@ def ReadCdeTxt(pathFile, options={}): # 202109271353
     .- output switchs is a string-dictionary for codes
     .- output areCodesOn is a boolean-dictionary for codes
     '''
-    keys, defaultValues = ['camera'], None
-    options = CompleteADictionary(options, keys, defaultValues)
     codes = ReadRectangleFromTxt(pathFile, {'c1':1, 'valueType':'str'}) # important not to sort
     assert len(codes) == len(list(set(codes)))
     rawData = np.asarray(ReadRectangleFromTxt(pathFile, {'c0':1, 'c1':4, 'valueType':'float'}))
@@ -409,7 +547,7 @@ def WriteCdgTxt(pathCdgTxt, cs, rs, xs, ys, zs, options={}): # 202110051016
     fileout = open(pathCdgTxt, 'w')
     for pos in range(len(cs)):
         fileout.write('{:15.3f} {:15.3f} {:15.3f} {:15.3f} {:15.3f}'.format(cs[pos], rs[pos], xs[pos], ys[pos], zs[pos]))
-        if options['codes'] is None:
+        if options['codes'] is None or options['codes'][pos] == 'c,':
             fileout.write(' \t c, r, x, y and z\n')
         else:
             fileout.write(' {:>15} \t c, r, x, y, z and code\n'.format(options['codes'][pos]))
@@ -427,3 +565,45 @@ def WriteCdhTxt(pathCdhTxt, chs, rhs): # 202110150951
         fileout.write('{:15.3f} {:15.3f} \t c and r in the horizon\n'.format(chs[pos], rhs[pos]))
     fileout.close()
     return None
+def XYZ2A0(xs, ys, zs): # 202201250808
+    '''
+    .- input xs, ys and zs are float-ndarrays of the same length
+    .- output A0 is a (2*len(xs)x8)-float-ndarray
+    '''
+    poss0, poss1 = Poss0AndPoss1(len(xs))
+    A0 = np.zeros((2 * len(xs), 8))
+    A0[poss0, 0], A0[poss0, 1], A0[poss0, 2], A0[poss0, 3] = xs, ys, zs, np.ones(xs.shape)
+    A0[poss1, 4], A0[poss1, 5], A0[poss1, 6], A0[poss1, 7] = xs, ys, zs, np.ones(xs.shape)
+    return A0
+def XYZPa112CURU(xs, ys, zs, Pa11): # *** 
+    ''''
+    .- input xs, ys and zs are float-ndarrays of the same length
+    .- input Pa11 is a 11-float-ndarray
+    .- output cUs and rUs are float-ndarrays of the same length as xs
+    '''
+    dens = Pa11[8] * xs + Pa11[9] * ys + Pa11[10] * zs + 1.
+    cUs = (Pa11[0] * xs + Pa11[1] * ys + Pa11[2] * zs + Pa11[3]) / dens
+    rUs = (Pa11[4] * xs + Pa11[5] * ys + Pa11[6] * zs + Pa11[7]) / dens
+    return cUs, rUs
+def Xi2XForParabolicDistortion(xis): # *** 
+    ''' comments:
+    .- input xis is a float-ndarray
+    .- output xs is a float-ndarray
+        .- it is solved: xis = xs ** 3 + 2 * xs ** 2 + xs
+    '''
+    p, qs, Deltas = -1. /3., -(xis + 2. / 27.), (xis + 4. / 27.) * xis
+    if np.max(Deltas) < 0: # for xis in (-4/27, 0)
+        n3s = (qs + 1j * np.sqrt(np.abs(Deltas))) / 2.
+        ns = np.abs(n3s) ** (1. / 3.) * np.exp(1j * (np.abs(np.angle(n3s)) + 2. * np.pi * 1.) / 3.) # we ensure theta > 0; + 2 pi j for j = 0, 1, 2
+    elif np.min(Deltas) >= 0: # for xis not in (-4/27, 0)
+        auxs = (qs + np.sqrt(Deltas)) / 2.
+        ns = np.sign(auxs) * (np.abs(auxs) ** (1. / 3.))
+    else:
+        possN, possP, ns = np.where(Deltas < 0)[0], np.where(Deltas >= 0)[0], np.zeros(xis.shape) + 1j * np.zeros(xis.shape)
+        n3sN = (qs[possN] + 1j * np.sqrt(np.abs(Deltas[possN]))) / 2.
+        ns[possN] = np.abs(n3sN) ** (1. / 3.) * np.exp(1j * (np.abs(np.angle(n3sN)) + 2. * np.pi * 1.) / 3.) # we ensure theta > 0; + 2 pi j for j = 0, 1, 2
+        auxs = (qs[possP] + np.sqrt(Deltas[possP])) / 2.
+        ns[possP] = np.sign(auxs) * (np.abs(auxs) ** (1. / 3.))
+    xs = np.real(p / (3. * ns) - ns - 2. / 3.)
+    assert np.allclose(xs ** 3 + 2 * xs ** 2 + xs, xis) # avoidable
+    return xs
